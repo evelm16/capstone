@@ -1,0 +1,33 @@
+export MASTER_ARN=$(aws kms describe-key --key-id alias/capstone --query KeyMetadata.Arn --output text)
+
+MASTER_ARN=arn:aws:kms:us-east-1:914339014973:key/998739dc-6d7f-4afe-b2ab-c4154a125fa5
+
+cat << EOF > capstone.yaml
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: capstone-eksctl
+  region: ${AWS_REGION}
+  version: "1.21"
+
+availabilityZones: ["${AZS[0]}", "${AZS[1]}", "${AZS[2]}"]
+
+managedNodeGroups:
+- name: nodegroup
+  desiredCapacity: 3
+  instanceType: t3.small
+  ssh:
+    enableSsm: true
+
+# To enable all of the control plane logs, uncomment below:
+# cloudWatch:
+#  clusterLogging:
+#    enableTypes: ["*"]
+
+secretsEncryption:
+  keyARN: ${MASTER_ARN}
+EOF
+
+eksctl create cluster -f capstone.yaml
